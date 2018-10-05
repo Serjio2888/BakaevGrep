@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import sys
 import re
 
@@ -10,165 +10,142 @@ def output(line):
 
 def grep(lines, params):
     
-    strings = lines #массив строк, подаваемых на вход
-
-    lol = params
+    """Собирает номера строк, подходящих под шаблон
+       Обрабатывает их в соответсвии с указанными флагами(так как с цифрами работать намного проще и быстрее)
+       И в конце передаёт их в output в виде lines[номер строки]
+    """
     
-
-    realstrings = list(strings)#создаём, так как планируется изменять массив strings
+    reallines = list(lines)#создаём, так как планируется изменять массив lines
+                           #в частности, для правильной работы ignore_case
     
-    #удаляем \n в конце строчек
-    for i in range(len(strings)):
-        strings[i] = (strings[i]).rstrip()
+    #удаляем \n в конце строчек (образуется при вводе с клавиатуры,
+    #и не нужно для корректной работы тестов
+    for i in range(len(lines)):
+        lines[i] = (lines[i]).rstrip()
 
     #Переводим в нижний регистр всё, что подали на вход, шаблон, если стоит -i
-    if lol.ignore_case:
-        lol.pattern = lol.pattern.lower()
-        for key in range(len(strings)):
-            strings[key]=strings[key].lower()
+    if params.ignore_case:
+        params.pattern = params.pattern.lower()
+        for key in range(len(lines)):
+            lines[key]=lines[key].lower()
 
     #если введено несколько '*' подряд - заменим на одну
-    lol.pattern = re.sub('\*+','\w*', lol.pattern)
+    params.pattern = re.sub('\*+','\w*', params.pattern)
 
     #заменим '?' на '.'
-    lol.pattern = re.sub('\?',r'.',lol.pattern)
+    params.pattern = re.sub('\?',r'.',params.pattern)
 
-    k = 0
-    A = [None]*len(strings)#в будущем - список номеров строк из strings, которые совпали с шаблоном
+    A = [None]*len(lines)#в будущем - список номеров строк из lines, которые совпали с шаблоном
 
-    if not(lol.invert):
-        for i in range(len(strings)):
-            if re.findall(lol.pattern, strings[i]):
+    #Получим в А список номеров строк, в которых есть/нет совпадений с шаблоном
+    if not(params.invert):
+        for i in range(len(lines)):
+            if re.findall(params.pattern, lines[i]):
                 A[i]=i
         A=set(A) 
         A=list(A)
         if None in A:
             A.pop()
-
-    if lol.invert:
-        for i in range(len(strings)):
-            if not(re.findall(lol.pattern, strings[i])):
+    if params.invert:
+        for i in range(len(lines)):
+            if not(re.findall(params.pattern, lines[i])):
                 A[i]=i
         A=set(A)
         A=list(A)
         if None in A:
             A.pop()
-    #Получили список номеров строк, в которых есть/нет совпадений с шаблоном
-
 
 
     #ТУТ БУДЕМ СЧИТАТЬ КОЛИЧЕСТВО СОПАДЕНИЙ С ШАБЛОНОМ В СЛУЧАЕ count=True
-    if lol.count:
-        k = (len(A))
-        #for i in A: писалось, так как думал, что нужно считать общее число совпадений
-            #k += (len(re.findall(lol.pattern,strings[i])))
+    if params.count:
+        k = (len(A)-1)
         return(output(str(k)))#так как тест, почему-то, требует именно строку, а не число
 
+    con = params.context
+    befo = params.before_context
+    afte = params.after_context
 
-    con = lol.context
-    befo = lol.before_context
-    afte = lol.after_context
-
-    B = []
-    C = []
-    D = []#сделаем ещё три списка, в которые
-          #будем помещать номера строк контекста
-    R = []
-    N = []
-    M = []
-
-    L = [] 
-
+    L = [] #новый массив, в который запишем номера строк контекста
     if con:
         for i in A:
             for k in range(0, 2*con+1,):
-                B.append(i-con+k)       
-        B=set(B)
-        B=list(B)
-        R = list(B)
-        for num in range(len(B)):
-            if (B[num])<0:
-                R.pop()
-            if (B[num])>=(len(strings)):
-                R.pop()
-        L = list(R)
+                L.append(i-con+k)       
+        L=set(L)
+        L=list(L)
+        for num in range(len(L)):
+            if (L[num])<0:
+                L.pop()
+            if (L[num])>=(len(lines)):
+                L.pop()
         #выведем полученное
-        if not(lol.line_number):
+        if not(params.line_number):
             for i in L:
-                output(realstrings[i])
-        if lol.line_number:
+                output(reallines[i])
+        if params.line_number:
             for i in L:
                 if i in A:
-                    answer = (str(i+1)+':'+realstrings[i])
+                    answer = (str(i+1)+':'+reallines[i])
                     output(answer)
                 else:
-                    answer = (str(i+1)+'-'+realstrings[i])
+                    answer = (str(i+1)+'-'+reallines[i])
                     output(answer)
-
 
     elif befo:
         for i in A:
             for k in range(0, befo+1,):
-                C.append(i-befo+k)        
-        C=set(C)
-        C=list(C)
-        N = list(C)
-        for num in range(len(C)):
-            if (C[num])<0:
-                N.pop()
-            if (C[num])>=(len(strings)):
-                N.pop()
-        L = list(N)
+                L.append(i-befo+k)        
+        L=set(L)
+        L=list(L)
+        for num in range(len(L)):
+            if (L[num])<0:
+                L.pop()
+            if (L[num])>=(len(lines)):
+                L.pop()
         #выведем полученное
-        if not(lol.line_number):
+        if not(params.line_number):
             for i in L:
-                output(realstrings[i])
-        if lol.line_number:
+                output(reallines[i])
+        if params.line_number:
             for i in L:
                 if i in A:
-                    answer = (str(i+1)+':'+realstrings[i])
+                    answer = (str(i+1)+':'+reallines[i])
                     output(answer)
                 else:
-                    answer = (str(i+1)+'-'+realstrings[i])
+                    answer = (str(i+1)+'-'+reallines[i])
                     output(answer)
-
-            
 
     elif afte:
         for i in A:
             for k in range(0, afte+1,):
-                D.append(i+afte-k)       
-        D=set(D)
-        D=list(D)
-        M = list(D)
-        for num in range(len(D)):
-            if (D[num])<0:
-                M.pop()
-            if (D[num])>=(len(strings)):
-                M.pop()
-        L = list(M)
+                L.append(i+afte-k)       
+        L=set(L)
+        L=list(L)
+        for num in range(len(L)):
+            if (L[num])<0:
+                L.pop()
+            if (L[num])>=(len(lines)):
+                L.pop()
         #выведем полученное
-        if not(lol.line_number):
+        if not(params.line_number):
             for i in L:
-                output(realstrings[i])
-        if lol.line_number:
+                output(reallines[i])
+        if params.line_number:
             for i in L:
                 if i in A:
-                    answer = (str(i+1)+':'+realstrings[i])
+                    answer = (str(i+1)+':'+reallines[i])
                     output(answer)
                 else:
-                    answer = (str(i+1)+'-'+realstrings[i])
+                    answer = (str(i+1)+'-'+reallines[i])
                     output(answer)
-
 
     #вывод в случае, если не используются флаги контекста
     else:
-        if not(lol.line_number):
+        if not(params.line_number):
             for i in A:
-                output(realstrings[i])
-        if lol.line_number:
+                output(reallines[i])
+        if params.line_number:
             for i in A:
-                answer = (str(i+1)+':'+realstrings[i])
+                answer = (str(i+1)+':'+reallines[i])
                 output(answer)
 
 
