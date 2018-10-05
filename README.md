@@ -5,7 +5,9 @@
 Программа не проходит два теста, а именно test_base_scenario_count и test_base_scenario_invert. Хотя при вводе данных через консоль - все работает правильно.
 
 Но если убрать строки:
-    if lol.ignore_case:
+
+
+    if lol.ignore_case: 
         lol.pattern = lol.pattern.lower()
         for key in range(len(strings)):
             strings[key]=strings[key].lower()
